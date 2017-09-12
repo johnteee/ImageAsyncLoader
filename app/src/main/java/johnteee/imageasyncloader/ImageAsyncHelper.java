@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
 import java.util.Objects;
@@ -98,6 +99,7 @@ class ImageAsyncHelper {
 
                             if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
                                 imageView.setImageDrawable(bitmapDrawable);
+                                imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
                             }
                         }
                     });
