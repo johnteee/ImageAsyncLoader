@@ -24,7 +24,7 @@ public class ImageAsyncUtils {
     private static Handler uiHandler = new Handler(Looper.getMainLooper());
     private static ConcurrentHashMap<String, Long> viewTimeOrderMap = new ConcurrentHashMap<>();
 
-    private static int cacheSize = 20 * 1024 * 1024; // 4MiB
+    private static int cacheSize = 30 * 1024 * 1024; // 30MiB
     private static BitmapCacheWithARC resBitmapCache = new BitmapCacheWithARC(cacheSize);
 
     public static void loadImageResAsync(final Context context, final ImageView imageView, final int resId) {
