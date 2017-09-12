@@ -35,12 +35,12 @@ class ImageAsyncHelper {
 
         BitmapDrawable bitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
         if (!(ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
-            setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp);
+            setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp, false);
             return;
         }
 
         // Avoid recycling images displayed wrong images.
-        setImageBitmapOnUiThread(imageView, null, myOperatingExactTimestamp);
+        setImageBitmapOnUiThread(imageView, null, myOperatingExactTimestamp, false);
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
 
             @Override
@@ -79,11 +79,18 @@ class ImageAsyncHelper {
 
     /**
      *
+     */
+    private void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
+        setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp, true);
+    }
+
+    /**
+     *
      * @param imageView
      * @param bitmapDrawable
      * @param myOperatingExactTimestamp To avoid the disorder problems of imageview updating.
      */
-    private void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
+    private void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp, final boolean withAnimation) {
         uiHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -99,7 +106,10 @@ class ImageAsyncHelper {
 
                             if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
                                 imageView.setImageDrawable(bitmapDrawable);
-                                imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
+
+                                if (withAnimation) {
+                                    imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
+                                }
                             }
                         }
                     });
