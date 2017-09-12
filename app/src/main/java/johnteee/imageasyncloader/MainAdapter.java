@@ -19,11 +19,14 @@ public class MainAdapter extends RecyclerView.Adapter<VH> {
 
     private final Context context;
     private final ArrayList<Integer> resList;
+    private final ImageAsyncHelper imageAsyncHelper;
 
     private int lastPosition;
 
-    MainAdapter(Context context) {
+    MainAdapter(Context context, ImageAsyncHelper imageAsyncHelper) {
         this.context = context;
+
+        this.imageAsyncHelper = imageAsyncHelper;
 
         ArrayList<Integer> drawableList = new ArrayList<>();
         for (int i = 67; i <= 96; i++) {
@@ -44,7 +47,7 @@ public class MainAdapter extends RecyclerView.Adapter<VH> {
 //        holder.image.setImageBitmap(ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resList.get(position), 100, 100));
 
         Integer resId = resList.get(position);
-        ImageAsyncUtils.loadImageResAsync(context, holder.image, resId);
+        imageAsyncHelper.loadImageResAsync(context, holder.image, resId, 100, 100);
         holder.title.setText(context.getResources().getResourceName(resId));
         holder.description.setText("Description of " + context.getResources().getResourceName(resId));
 

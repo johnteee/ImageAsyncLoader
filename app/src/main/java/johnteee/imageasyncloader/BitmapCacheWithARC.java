@@ -7,6 +7,7 @@ import android.util.Log;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by teee on 2017/9/12.
@@ -14,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 class BitmapCacheWithARC extends LruCache<String, BitmapDrawable> {
 
-    private static ConcurrentHashMap<String, Integer> drawableARCMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Integer> drawableARCMap = new ConcurrentHashMap<>();
+    private AtomicBoolean isTerminating = new AtomicBoolean(false);
 
     /**
      * @param maxSize for caches that do not override {@link #sizeOf}, this is
@@ -44,6 +46,10 @@ class BitmapCacheWithARC extends LruCache<String, BitmapDrawable> {
 
         if (evicted && (! ImageUtils.isBitmapDrawableEmptyOrRecycled(oldValue))) {
             changeDrawableARC(oldValue, -1);
+
+            if (isTerminating.get()) {
+                ImageUtils.recycleDrawable(oldValue);
+            }
         }
     }
 
@@ -96,5 +102,17 @@ class BitmapCacheWithARC extends LruCache<String, BitmapDrawable> {
         Log.d("test", value);
 
         return value;
+    }
+
+    public void terminate() {
+        doThingsWithARCSafe(new Runnable() {
+            @Override
+            public void run() {
+                drawableARCMap.clear();
+                isTerminating.set(true);
+                evictAll();
+                System.gc();
+            }
+        });
     }
 }

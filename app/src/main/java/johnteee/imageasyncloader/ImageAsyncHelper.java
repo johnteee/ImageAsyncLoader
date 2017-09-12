@@ -18,17 +18,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by teee on 2017/9/12.
  */
 
-public class ImageAsyncUtils {
+class ImageAsyncHelper {
 
-    public static final int REQ_WIDTH = 100;
-    public static final int REQ_HEIGHT = 100;
-    private static Handler uiHandler = new Handler(Looper.getMainLooper());
-    private static ConcurrentHashMap<String, Long> viewTimeOrderMap = new ConcurrentHashMap<>();
+    private Handler uiHandler = new Handler(Looper.getMainLooper());
+    private ConcurrentHashMap<String, Long> viewTimeOrderMap = new ConcurrentHashMap<>();
 
-    private static int cacheSize = 30 * 1024 * 1024; // 30MiB
-    private static BitmapCacheWithARC resBitmapCache = new BitmapCacheWithARC(cacheSize);
+    private int cacheSize = 30 * 1024 * 1024; // 30MiB
+    private BitmapCacheWithARC resBitmapCache = new BitmapCacheWithARC(cacheSize);
 
-    public static void loadImageResAsync(final Context context, final ImageView imageView, final int resId) {
+    public void loadImageResAsync(final Context context, final ImageView imageView, final int resId, final int req_width, final int req_height) {
         final String keyOfView = getKeyOfObject(imageView);
 
         final long myOperatingExactTimestamp = System.currentTimeMillis();
@@ -47,7 +45,7 @@ public class ImageAsyncUtils {
             @Override
             protected Void doInBackground(Void... voids) {
 
-                Bitmap newBitmap = ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resId, REQ_WIDTH, REQ_HEIGHT);
+                Bitmap newBitmap = ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resId, req_width, req_height);
                 BitmapDrawable newBitmapDrawable = new BitmapDrawable(context.getResources(), newBitmap);
 
                 BitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
@@ -67,11 +65,11 @@ public class ImageAsyncUtils {
     }
 
     @NonNull
-    private static String getDrawableKeyByResId(int resId) {
+    private String getDrawableKeyByResId(int resId) {
         return "drawable_" + resId;
     }
 
-    private static String getKeyOfObject(Object object) {
+    private String getKeyOfObject(Object object) {
         String value = Objects.toString(object);
         Log.d("test", value);
 
@@ -84,7 +82,7 @@ public class ImageAsyncUtils {
      * @param bitmapDrawable
      * @param myOperatingExactTimestamp To avoid the disorder problems of imageview updating.
      */
-    private static void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
+    private void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
         uiHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -106,5 +104,10 @@ public class ImageAsyncUtils {
                 }
             }
         });
+    }
+
+    public void terminate() {
+        resBitmapCache.terminate();
+        viewTimeOrderMap.clear();
     }
 }

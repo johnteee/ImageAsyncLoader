@@ -9,6 +9,7 @@ public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private LinearLayoutManager linearLayoutManager;
+    private ImageAsyncHelper imageAsyncHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,9 +17,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         recyclerView = (RecyclerView) findViewById(R.id.list);
+
         linearLayoutManager = new LinearLayoutManager(this);
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(linearLayoutManager);
-        recyclerView.setAdapter(new MainAdapter(this));
+
+        imageAsyncHelper = new ImageAsyncHelper();
+        recyclerView.setAdapter(new MainAdapter(this, imageAsyncHelper));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        imageAsyncHelper.terminate();
     }
 }
