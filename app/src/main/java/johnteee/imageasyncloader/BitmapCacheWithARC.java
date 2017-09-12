@@ -59,6 +59,14 @@ class BitmapCacheWithARC extends LruCache<String, BitmapDrawable> {
         }
     }
 
+    public void doThingsWithARCSafe(Runnable runnable) {
+        synchronized (drawableARCMap) {
+            if (runnable != null) {
+                runnable.run();
+            }
+        }
+    }
+
     private void changeDrawableARC(Drawable drawable, int i) {
         synchronized (drawableARCMap) {
             String key = getKeyOfObject(drawable);

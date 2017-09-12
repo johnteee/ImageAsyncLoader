@@ -91,11 +91,18 @@ public class ImageAsyncUtils {
                 String keyOfView = getKeyOfObject(imageView);
                 Long lastTimestamp = viewTimeOrderMap.get(keyOfView);
                 if (lastTimestamp == null || myOperatingExactTimestamp >= lastTimestamp) {
-                    Drawable oldDrawable = imageView.getDrawable();
-                    imageView.setImageDrawable(bitmapDrawable);
+                    resBitmapCache.doThingsWithARCSafe(new Runnable() {
+                        @Override
+                        public void run() {
+                            Drawable oldDrawable = imageView.getDrawable();
+                            resBitmapCache.changeDrawableARCAndCheck(oldDrawable, -1);
+                            resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
 
-                    resBitmapCache.changeDrawableARCAndCheck(oldDrawable, -1);
-                    resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
+                            if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
+                                imageView.setImageDrawable(bitmapDrawable);
+                            }
+                        }
+                    });
                 }
             }
         });
