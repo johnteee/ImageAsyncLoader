@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by teee on 2017/9/12.
  */
 
-class BitmapCacheWithARC extends LruCache<Integer, BitmapDrawable> {
+class BitmapCacheWithARC extends LruCache<String, BitmapDrawable> {
 
     private static ConcurrentHashMap<String, Integer> drawableARCMap = new ConcurrentHashMap<>();
 
@@ -27,11 +27,11 @@ class BitmapCacheWithARC extends LruCache<Integer, BitmapDrawable> {
 
 
     @Override
-    protected int sizeOf(Integer key, BitmapDrawable value) {
+    protected int sizeOf(String key, BitmapDrawable value) {
         return ImageUtils.getBitmapByteCount(value.getBitmap());
     }
 
-    public BitmapDrawable putWithARC(Integer key, BitmapDrawable value) {
+    public BitmapDrawable putWithARC(String key, BitmapDrawable value) {
 
         changeDrawableARC(value, 1);
 
@@ -39,7 +39,7 @@ class BitmapCacheWithARC extends LruCache<Integer, BitmapDrawable> {
     }
 
     @Override
-    protected void entryRemoved(boolean evicted, Integer key, BitmapDrawable oldValue, BitmapDrawable newValue) {
+    protected void entryRemoved(boolean evicted, String key, BitmapDrawable oldValue, BitmapDrawable newValue) {
         super.entryRemoved(evicted, key, oldValue, newValue);
 
         if (evicted && (! ImageUtils.isBitmapDrawableEmptyOrRecycled(oldValue))) {

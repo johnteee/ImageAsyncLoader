@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.ImageView;
 
@@ -33,7 +34,7 @@ public class ImageAsyncUtils {
         final long myOperatingExactTimestamp = System.currentTimeMillis();
         viewTimeOrderMap.put(keyOfView, myOperatingExactTimestamp);
 
-        BitmapDrawable bitmapDrawable = resBitmapCache.get(resId);
+        BitmapDrawable bitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
         if (!(ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
             setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp);
             return;
@@ -49,9 +50,9 @@ public class ImageAsyncUtils {
                 Bitmap newBitmap = ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resId, REQ_WIDTH, REQ_HEIGHT);
                 BitmapDrawable newBitmapDrawable = new BitmapDrawable(context.getResources(), newBitmap);
 
-                BitmapDrawable existingBitmapDrawable = resBitmapCache.get(resId);
+                BitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
                 if (ImageUtils.isBitmapDrawableEmptyOrRecycled(existingBitmapDrawable)) {
-                    resBitmapCache.putWithARC(resId, newBitmapDrawable);
+                    resBitmapCache.putWithARC(getDrawableKeyByResId(resId), newBitmapDrawable);
                 }
                 else {
                     ImageUtils.recycleDrawable(newBitmapDrawable);
@@ -63,6 +64,11 @@ public class ImageAsyncUtils {
             }
         };
         asyncTask.execute();
+    }
+
+    @NonNull
+    private static String getDrawableKeyByResId(int resId) {
+        return "drawable_" + resId;
     }
 
     private static String getKeyOfObject(Object object) {
