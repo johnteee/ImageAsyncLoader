@@ -3,6 +3,9 @@ package johnteee.imageasyncloader;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 
 /**
  * Created by teee on 2017/9/12.
@@ -59,4 +62,38 @@ public class ImageUtils {
         options.inJustDecodeBounds = false;
         return BitmapFactory.decodeResource(res, resId, options);
     }
+
+    public static void recycleDrawable(Drawable drawable) {
+        synchronized (drawable) {
+            if (drawable instanceof BitmapDrawable) {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                Bitmap bitmap = bitmapDrawable.getBitmap();
+                if (bitmap != null) {
+                    recycleBitmap(bitmap);
+                }
+            }
+        }
+    }
+
+    public static void recycleBitmap(Bitmap bitmap) {
+        synchronized (bitmap) {
+            if (! bitmap.isRecycled()) {
+                bitmap.recycle();
+                System.gc();
+            }
+        }
+    }
+
+    public static boolean isBitmapDrawableEmptyOrRecycled(BitmapDrawable bitmapDrawable) {
+        return bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled();
+    }
+
+    public static int getBitmapByteCount(Bitmap bitmap) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB_MR1)
+            return bitmap.getRowBytes() * bitmap.getHeight();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
+            return bitmap.getByteCount();
+        return bitmap.getAllocationByteCount();
+    }
+
 }

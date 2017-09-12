@@ -2,12 +2,12 @@ package johnteee.imageasyncloader;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.util.LruCache;
 import android.util.Log;
-import android.view.View;
 import android.widget.ImageView;
 
 import java.util.Objects;
@@ -19,39 +19,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ImageAsyncUtils {
 
-    public static final int REQ_WIDTH = 200;
-    public static final int REQ_HEIGHT = 200;
+    public static final int REQ_WIDTH = 100;
+    public static final int REQ_HEIGHT = 100;
     private static Handler uiHandler = new Handler(Looper.getMainLooper());
     private static ConcurrentHashMap<String, Long> viewTimeOrderMap = new ConcurrentHashMap<>();
 
-    private static int cacheSize = 4 * 1024 * 1024; // 4MiB
-    private static LruCache<Integer, Bitmap> resBitmapCache = new LruCache<Integer, Bitmap>(cacheSize) {
-        protected int sizeOf(String key, Bitmap value) {
-            return value.getByteCount();
-        }
-
-        @Override
-        protected void entryRemoved(boolean evicted, Integer key, Bitmap oldValue, Bitmap newValue) {
-            synchronized (oldValue) {
-                if (! oldValue.isRecycled()) {
-                    oldValue.recycle();
-                    System.gc();
-                }
-
-                super.entryRemoved(evicted, key, oldValue, newValue);
-            }
-        }
-    };
+    private static int cacheSize = 20 * 1024 * 1024; // 4MiB
+    private static BitmapCacheWithARC resBitmapCache = new BitmapCacheWithARC(cacheSize);
 
     public static void loadImageResAsync(final Context context, final ImageView imageView, final int resId) {
-        final String keyOfView = getKeyOfView(imageView);
+        final String keyOfView = getKeyOfObject(imageView);
 
         final long myOperatingExactTimestamp = System.currentTimeMillis();
         viewTimeOrderMap.put(keyOfView, myOperatingExactTimestamp);
 
-        Bitmap oldBitmap = resBitmapCache.get(resId);
-        if (oldBitmap != null && (! oldBitmap.isRecycled())) {
-            setImageBitmapOnUiThread(imageView, oldBitmap, myOperatingExactTimestamp);
+        BitmapDrawable bitmapDrawable = resBitmapCache.get(resId);
+        if (!(ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
+            setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp);
             return;
         }
 
@@ -63,12 +47,17 @@ public class ImageAsyncUtils {
             protected Void doInBackground(Void... voids) {
 
                 Bitmap newBitmap = ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resId, REQ_WIDTH, REQ_HEIGHT);
-                Bitmap existingBitmap = resBitmapCache.get(resId);
-                if (existingBitmap == null || existingBitmap.isRecycled()) {
-                    resBitmapCache.put(resId, newBitmap);
+                BitmapDrawable newBitmapDrawable = new BitmapDrawable(context.getResources(), newBitmap);
+
+                BitmapDrawable existingBitmapDrawable = resBitmapCache.get(resId);
+                if (ImageUtils.isBitmapDrawableEmptyOrRecycled(existingBitmapDrawable)) {
+                    resBitmapCache.putWithARC(resId, newBitmapDrawable);
+                }
+                else {
+                    ImageUtils.recycleDrawable(newBitmapDrawable);
                 }
 
-                setImageBitmapOnUiThread(imageView, newBitmap, myOperatingExactTimestamp);
+                setImageBitmapOnUiThread(imageView, newBitmapDrawable, myOperatingExactTimestamp);
 
                 return null;
             }
@@ -76,8 +65,8 @@ public class ImageAsyncUtils {
         asyncTask.execute();
     }
 
-    private static String getKeyOfView(View view) {
-        String value = Objects.toString(view);
+    private static String getKeyOfObject(Object object) {
+        String value = Objects.toString(object);
         Log.d("test", value);
 
         return value;
@@ -86,17 +75,21 @@ public class ImageAsyncUtils {
     /**
      *
      * @param imageView
-     * @param bitmap
+     * @param bitmapDrawable
      * @param myOperatingExactTimestamp To avoid the disorder problems of imageview updating.
      */
-    private static void setImageBitmapOnUiThread(final ImageView imageView, final Bitmap bitmap, final long myOperatingExactTimestamp) {
+    private static void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
         uiHandler.post(new Runnable() {
             @Override
             public void run() {
-                String keyOfView = getKeyOfView(imageView);
+                String keyOfView = getKeyOfObject(imageView);
                 Long lastTimestamp = viewTimeOrderMap.get(keyOfView);
                 if (lastTimestamp == null || myOperatingExactTimestamp >= lastTimestamp) {
-                    imageView.setImageBitmap(bitmap);
+                    Drawable oldDrawable = imageView.getDrawable();
+                    imageView.setImageDrawable(bitmapDrawable);
+
+                    resBitmapCache.changeDrawableARCAndCheck(oldDrawable, -1);
+                    resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
                 }
             }
         });

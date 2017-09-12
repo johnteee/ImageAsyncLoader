@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 
@@ -42,7 +43,10 @@ public class MainAdapter extends RecyclerView.Adapter<VH> {
     public void onBindViewHolder(VH holder, int position) {
 //        holder.image.setImageBitmap(ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resList.get(position), 100, 100));
 
-        ImageAsyncUtils.loadImageResAsync(context, holder.image, resList.get(position));
+        Integer resId = resList.get(position);
+        ImageAsyncUtils.loadImageResAsync(context, holder.image, resId);
+        holder.title.setText(context.getResources().getResourceName(resId));
+        holder.description.setText("Description of " + context.getResources().getResourceName(resId));
 
         setAnimation(holder, position);
     }
@@ -76,11 +80,15 @@ public class MainAdapter extends RecyclerView.Adapter<VH> {
 class VH extends RecyclerView.ViewHolder {
 
     public ImageView image;
+    public TextView title;
+    public TextView description;
 
     public VH(View itemView) {
         super(itemView);
 
         image = itemView.findViewById(R.id.image);
+        title = itemView.findViewById(R.id.title);
+        description = itemView.findViewById(R.id.description);
     }
 
     public void clearAnimation() {
