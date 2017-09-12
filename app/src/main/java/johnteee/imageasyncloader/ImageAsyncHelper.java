@@ -21,11 +21,29 @@ import java.util.concurrent.ConcurrentHashMap;
 
 class ImageAsyncHelper {
 
-    private Handler uiHandler = new Handler(Looper.getMainLooper());
-    private ConcurrentHashMap<String, Long> viewTimeOrderMap = new ConcurrentHashMap<>();
+    private static final int MIB_IN_BYTES = 1024 * 1024;
 
-    private int cacheSize = 30 * 1024 * 1024; // 30MiB
-    private BitmapCacheWithARC resBitmapCache = new BitmapCacheWithARC(cacheSize);
+    private Handler uiHandler = new Handler(Looper.getMainLooper());
+
+    private ConcurrentHashMap<String, Long> viewTimeOrderMap;
+
+    private int cacheSize;
+    private BitmapCacheWithARC resBitmapCache;
+
+    ImageAsyncHelper() {
+        this(30);
+    }
+
+    ImageAsyncHelper(float cacheSizeInMiB) {
+        this.cacheSize = (int) (cacheSizeInMiB * MIB_IN_BYTES);
+
+        init();
+    }
+
+    private void init() {
+        resBitmapCache = new BitmapCacheWithARC(cacheSize);
+        viewTimeOrderMap = new ConcurrentHashMap<>();
+    }
 
     public void loadImageResAsync(final Context context, final ImageView imageView, final int resId, final int req_width, final int req_height) {
         final String keyOfView = getKeyOfObject(imageView);
