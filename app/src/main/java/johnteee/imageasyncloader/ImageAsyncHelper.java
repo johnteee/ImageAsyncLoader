@@ -57,7 +57,7 @@ class ImageAsyncHelper {
             return;
         }
 
-        // Avoid recycling images displayed wrong images.
+        // Avoid recycling ImageViews displayed wrong images.
         setImageBitmapOnUiThread(imageView, null, myOperatingExactTimestamp, false);
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
 
@@ -116,6 +116,10 @@ class ImageAsyncHelper {
                         @Override
                         public void run() {
                             Drawable oldDrawable = imageView.getDrawable();
+                            if (bitmapDrawable == oldDrawable) {
+                                return;
+                            }
+
                             resBitmapCache.changeDrawableARCAndCheck(oldDrawable, -1);
                             resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
 
