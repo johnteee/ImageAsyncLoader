@@ -76,7 +76,7 @@ class ImageAsyncHelper {
                 return null;
             }
         };
-        asyncTask.execute();
+        asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     @NonNull
