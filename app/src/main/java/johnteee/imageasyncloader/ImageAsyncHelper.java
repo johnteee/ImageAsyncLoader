@@ -2,7 +2,6 @@ package johnteee.imageasyncloader;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -28,7 +27,7 @@ class ImageAsyncHelper {
     private ConcurrentHashMap<String, Long> viewTimeOrderMap;
 
     private int cacheSize;
-    private BitmapCacheWithARC resBitmapCache;
+    private BitmapCache resBitmapCache;
 
     ImageAsyncHelper() {
         this(30);
@@ -41,7 +40,7 @@ class ImageAsyncHelper {
     }
 
     private void init() {
-        resBitmapCache = new BitmapCacheWithARC(cacheSize);
+        resBitmapCache = new BitmapCache(cacheSize);
         viewTimeOrderMap = new ConcurrentHashMap<>();
     }
 
@@ -51,7 +50,7 @@ class ImageAsyncHelper {
         final long myOperatingExactTimestamp = System.currentTimeMillis();
         viewTimeOrderMap.put(keyOfView, myOperatingExactTimestamp);
 
-        BitmapDrawable bitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
+        CacheableBitmapDrawable bitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
         if (!(ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
             setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp, false);
             return;
@@ -63,15 +62,15 @@ class ImageAsyncHelper {
 
             @Override
             protected Void doInBackground(Void... voids) {
-                BitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
+                CacheableBitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
                 if (! ImageUtils.isBitmapDrawableEmptyOrRecycled(existingBitmapDrawable)) {
                     return null;
                 }
 
                 Bitmap newBitmap = ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resId, req_width, req_height);
-                BitmapDrawable newBitmapDrawable = new BitmapDrawable(context.getResources(), newBitmap);
+                CacheableBitmapDrawable newBitmapDrawable = new CacheableBitmapDrawable(context.getResources(), newBitmap);
 
-                resBitmapCache.putWithARC(getDrawableKeyByResId(resId), newBitmapDrawable);
+                resBitmapCache.putWithCachedStatus(getDrawableKeyByResId(resId), newBitmapDrawable);
                 setImageBitmapOnUiThread(imageView, newBitmapDrawable, myOperatingExactTimestamp);
 
                 return null;
@@ -95,7 +94,7 @@ class ImageAsyncHelper {
     /**
      *
      */
-    private void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
+    private void setImageBitmapOnUiThread(final ImageView imageView, final CacheableBitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
         setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp, true);
     }
 
@@ -105,36 +104,37 @@ class ImageAsyncHelper {
      * @param bitmapDrawable
      * @param myOperatingExactTimestamp To avoid the disorder problems of imageview updating.
      */
-    private void setImageBitmapOnUiThread(final ImageView imageView, final BitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp, final boolean withAnimation) {
+    private void setImageBitmapOnUiThread(final ImageView imageView, final CacheableBitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp, final boolean withAnimation) {
         uiHandler.post(new Runnable() {
             @Override
             public void run() {
-                String keyOfView = getKeyOfObject(imageView);
-                Long lastTimestamp = viewTimeOrderMap.get(keyOfView);
-                if (lastTimestamp == null || myOperatingExactTimestamp >= lastTimestamp) {
-                    resBitmapCache.doThingsWithARCSafe(new Runnable() {
-                        @Override
-                        public void run() {
-                            Drawable oldDrawable = imageView.getDrawable();
-                            if (bitmapDrawable == oldDrawable) {
-                                return;
-                            }
+                Drawable oldDrawable = imageView.getDrawable();
+                if (bitmapDrawable == oldDrawable) {
+                    return;
+                }
 
-                            resBitmapCache.changeDrawableARCAndCheck(oldDrawable, -1);
+                boolean myTurn = isMyTurn(imageView, myOperatingExactTimestamp);
+                if (myTurn) {
+                    if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
+                        imageView.setImageDrawable(bitmapDrawable);
+                        resBitmapCache.checkDrawableRecycleable(oldDrawable);
 
-                            if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
-                                imageView.setImageDrawable(bitmapDrawable);
-                                resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
-
-                                if (withAnimation) {
-                                    imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
-                                }
-                            }
+                        if (withAnimation) {
+                            imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
                         }
-                    });
+                    }
+                    else {
+                        Log.d("test", "RECYCLED" + getKeyOfObject(bitmapDrawable));
+                    }
                 }
             }
         });
+    }
+
+    private boolean isMyTurn(ImageView imageView, long myOperatingExactTimestamp) {
+        String keyOfView = getKeyOfObject(imageView);
+        Long lastTimestamp = viewTimeOrderMap.get(keyOfView);
+        return lastTimestamp == null || myOperatingExactTimestamp >= lastTimestamp;
     }
 
     public void terminate() {
