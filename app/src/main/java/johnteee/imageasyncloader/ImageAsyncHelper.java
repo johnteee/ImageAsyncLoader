@@ -121,10 +121,10 @@ class ImageAsyncHelper {
                             }
 
                             resBitmapCache.changeDrawableARCAndCheck(oldDrawable, -1);
-                            resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
 
                             if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
                                 imageView.setImageDrawable(bitmapDrawable);
+                                resBitmapCache.changeDrawableARCAndCheck(bitmapDrawable, 1);
 
                                 if (withAnimation) {
                                     imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
