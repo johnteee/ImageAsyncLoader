@@ -63,18 +63,16 @@ class ImageAsyncHelper {
 
             @Override
             protected Void doInBackground(Void... voids) {
+                BitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
+                if (! ImageUtils.isBitmapDrawableEmptyOrRecycled(existingBitmapDrawable)) {
+                    return null;
+                }
 
                 Bitmap newBitmap = ImageUtils.decodeSampledBitmapFromResource(context.getResources(), resId, req_width, req_height);
                 BitmapDrawable newBitmapDrawable = new BitmapDrawable(context.getResources(), newBitmap);
 
-                BitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
-                if (ImageUtils.isBitmapDrawableEmptyOrRecycled(existingBitmapDrawable)) {
-                    resBitmapCache.putWithARC(getDrawableKeyByResId(resId), newBitmapDrawable);
-                    setImageBitmapOnUiThread(imageView, newBitmapDrawable, myOperatingExactTimestamp);
-                }
-                else {
-                    ImageUtils.recycleDrawable(newBitmapDrawable);
-                }
+                resBitmapCache.putWithARC(getDrawableKeyByResId(resId), newBitmapDrawable);
+                setImageBitmapOnUiThread(imageView, newBitmapDrawable, myOperatingExactTimestamp);
 
                 return null;
             }
