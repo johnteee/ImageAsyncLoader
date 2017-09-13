@@ -70,12 +70,11 @@ class ImageAsyncHelper {
                 BitmapDrawable existingBitmapDrawable = resBitmapCache.get(getDrawableKeyByResId(resId));
                 if (ImageUtils.isBitmapDrawableEmptyOrRecycled(existingBitmapDrawable)) {
                     resBitmapCache.putWithARC(getDrawableKeyByResId(resId), newBitmapDrawable);
+                    setImageBitmapOnUiThread(imageView, newBitmapDrawable, myOperatingExactTimestamp);
                 }
                 else {
                     ImageUtils.recycleDrawable(newBitmapDrawable);
                 }
-
-                setImageBitmapOnUiThread(imageView, newBitmapDrawable, myOperatingExactTimestamp);
 
                 return null;
             }
