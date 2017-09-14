@@ -1,7 +1,6 @@
 package johnteee.imageasyncloader;
 
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.support.v4.util.LruCache;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,19 +52,5 @@ class BitmapCache extends LruCache<String, CacheableBitmapDrawable> {
         isTerminating.set(true);
         evictAll();
         System.gc();
-    }
-
-    public void checkDrawableRecycleable(Drawable drawable) {
-        if (drawable instanceof CacheableBitmapDrawable) {
-            final CacheableBitmapDrawable cacheableBitmapDrawable = (CacheableBitmapDrawable) drawable;
-            cacheableBitmapDrawable.doThingsAboutAccessCachedStatus(new Runnable() {
-                @Override
-                public void run() {
-                    if (! cacheableBitmapDrawable.isCached()) {
-                        ImageUtils.recycleDrawable(cacheableBitmapDrawable);
-                    }
-                }
-            });
-        }
     }
 }
