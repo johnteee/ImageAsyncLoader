@@ -9,6 +9,7 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +44,7 @@ class ImageAsyncHelper {
         viewTimeOrderMap = new ConcurrentHashMap<>();
     }
 
-    public void loadImageResAsync(final Context context, final CacheableImageView imageView, final int resId, final int req_width, final int req_height) {
+    public void loadImageResAsync(final Context context, final ImageView imageView, final int resId, final int req_width, final int req_height) {
         final String keyOfView = getKeyOfObject(imageView);
 
         final long myOperatingExactTimestamp = System.currentTimeMillis();
@@ -93,7 +94,7 @@ class ImageAsyncHelper {
     /**
      *
      */
-    private void setImageBitmapOnUiThread(final CacheableImageView imageView, final CacheableBitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
+    private void setImageBitmapOnUiThread(final ImageView imageView, final CacheableBitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp) {
         setImageBitmapOnUiThread(imageView, bitmapDrawable, myOperatingExactTimestamp, true);
     }
 
@@ -103,7 +104,7 @@ class ImageAsyncHelper {
      * @param bitmapDrawable
      * @param myOperatingExactTimestamp To avoid the disorder problems of imageview updating.
      */
-    private void setImageBitmapOnUiThread(final CacheableImageView imageView, final CacheableBitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp, final boolean withAnimation) {
+    private void setImageBitmapOnUiThread(final ImageView imageView, final CacheableBitmapDrawable bitmapDrawable, final long myOperatingExactTimestamp, final boolean withAnimation) {
         uiHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -115,7 +116,7 @@ class ImageAsyncHelper {
                 boolean myTurn = isMyTurn(imageView, myOperatingExactTimestamp);
                 if (myTurn) {
                     if (bitmapDrawable == null || (! ImageUtils.isBitmapDrawableEmptyOrRecycled(bitmapDrawable))) {
-                        imageView.setImageDrawable(bitmapDrawable);
+                        CacheableBitmapDrawable.setImageDrawableWithRecyleableCheck(imageView, bitmapDrawable);
 
                         if (withAnimation) {
                             imageView.startAnimation(AnimationUtils.loadAnimation(imageView.getContext(), android.R.anim.fade_in));
@@ -129,7 +130,7 @@ class ImageAsyncHelper {
         });
     }
 
-    private boolean isMyTurn(CacheableImageView imageView, long myOperatingExactTimestamp) {
+    private boolean isMyTurn(ImageView imageView, long myOperatingExactTimestamp) {
         String keyOfView = getKeyOfObject(imageView);
         Long lastTimestamp = viewTimeOrderMap.get(keyOfView);
         return lastTimestamp == null || myOperatingExactTimestamp >= lastTimestamp;

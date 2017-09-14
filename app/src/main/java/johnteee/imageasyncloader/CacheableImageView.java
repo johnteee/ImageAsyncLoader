@@ -2,7 +2,6 @@ package johnteee.imageasyncloader;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 
@@ -31,8 +30,8 @@ public class CacheableImageView extends AppCompatImageView {
 
         super.setImageDrawable(drawable);
 
-        notifyDrawable(drawable, true);
-        notifyDrawable(oldDrawable, false);
+        CacheableBitmapDrawable.notifyDrawable(drawable, true);
+        CacheableBitmapDrawable.notifyDrawable(oldDrawable, false);
     }
 
     @Override
@@ -41,21 +40,6 @@ public class CacheableImageView extends AppCompatImageView {
 
         super.setImageResource(resId);
 
-        notifyDrawable(oldDrawable, false);
-    }
-
-    private static void notifyDrawable(Drawable drawable, final boolean isDisplayed) {
-        if (drawable instanceof CacheableBitmapDrawable) {
-
-            ((CacheableBitmapDrawable) drawable).setDisplayed(isDisplayed);
-
-        } else if (drawable instanceof LayerDrawable) {
-
-            // The drawable is a LayerDrawable, so recurse on each layer
-            LayerDrawable layerDrawable = (LayerDrawable) drawable;
-            for (int i = 0, z = layerDrawable.getNumberOfLayers(); i < z; i++) {
-                notifyDrawable(layerDrawable.getDrawable(i), isDisplayed);
-            }
-        }
+        CacheableBitmapDrawable.notifyDrawable(oldDrawable, false);
     }
 }
