@@ -27,7 +27,7 @@ class ImageAsyncHelper {
     private ConcurrentHashMap<String, Long> viewTimeOrderMap;
 
     private int cacheSize;
-    private BitmapCache resBitmapCache;
+    private BitmapCache<CacheableBitmapDrawable> resBitmapCache;
 
     ImageAsyncHelper() {
         this(30);

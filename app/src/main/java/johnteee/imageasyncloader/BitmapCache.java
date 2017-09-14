@@ -1,17 +1,19 @@
 package johnteee.imageasyncloader;
 
-import android.graphics.drawable.BitmapDrawable;
 import android.support.v4.util.LruCache;
 
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by teee on 2017/9/12.
  */
 
-class BitmapCache extends LruCache<String, CacheableBitmapDrawable> {
+class BitmapCache<T extends CacheableBitmapDrawable> extends LruCache<String, T> {
 
     private AtomicBoolean isTerminating = new AtomicBoolean(false);
+
+    private WeakHashMap<String, T> drawableWeakHashMap = new WeakHashMap<>();
 
     /**
      * @param maxSize for caches that do not override {@link #sizeOf}, this is
@@ -24,33 +26,56 @@ class BitmapCache extends LruCache<String, CacheableBitmapDrawable> {
 
 
     @Override
-    protected int sizeOf(String key, CacheableBitmapDrawable value) {
+    protected int sizeOf(String key, T value) {
         return ImageUtils.getBitmapByteCount(value.getBitmap());
     }
 
-    public BitmapDrawable putWithCachedStatus(String key, CacheableBitmapDrawable value) {
-
+    public void putWithCachedStatus(String key, T value) {
         value.setCached(true);
+        drawableWeakHashMap.put(key, value);
 
-        return put(key, value);
+        put(key, value);
+
+        checkTerminating();
     }
 
     @Override
-    protected void entryRemoved(boolean evicted, String key, CacheableBitmapDrawable oldValue, CacheableBitmapDrawable newValue) {
+    protected void entryRemoved(boolean evicted, String key, T oldValue, T newValue) {
         super.entryRemoved(evicted, key, oldValue, newValue);
 
         if (evicted && (! ImageUtils.isBitmapDrawableEmptyOrRecycled(oldValue))) {
             oldValue.setCached(false);
 
-            if (isTerminating.get()) {
-                ImageUtils.recycleDrawable(oldValue);
+            checkTerminating();
+        }
+    }
+
+    private void recycleAllDrawableWeakHashMap() {
+        for (T value : drawableWeakHashMap.values()) {
+            if (value != null) {
+                ImageUtils.recycleDrawable(value);
             }
         }
     }
 
     public void terminate() {
-        isTerminating.set(true);
+        synchronized (isTerminating) {
+            isTerminating.set(true);
+            recycleAllResources();
+        }
+    }
+
+    public void checkTerminating() {
+        synchronized (isTerminating) {
+            if (isTerminating.get()) {
+                recycleAllResources();
+            }
+        }
+    }
+
+    private void recycleAllResources() {
         evictAll();
+        recycleAllDrawableWeakHashMap();
         System.gc();
     }
 }
